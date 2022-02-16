@@ -1,8 +1,13 @@
 import React from 'react';
-import { Select } from 'antd';
-import { useDispatch } from 'react-redux';
+import { Alert, Button, Select } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
+
+import { useDispatch, useSelector } from 'react-redux';
 import { selectResponseMessageName, selectResponseMessageOnErrorName } from './ExpectedBodyInputActions';
 import { MESSAGE_NAME_WIDTH } from '../BodyInput/BodyInput';
+import { buildProtofiles } from '../../../Collection/protofile/ProtofileManagerActions';
+import { AppState } from '../../../../models/AppState';
+import { getByKey } from '../../../../utils/utils';
 
 type Props = {
   messageNames: ReadonlyArray<string>;
@@ -18,13 +23,24 @@ const ExpectedBodyInput: React.FunctionComponent<Props> = ({
   expectedProtobufMsgOnError,
 }) => {
   const dispatch = useDispatch();
-
+  const collectionName = useSelector((s: AppState) => s.currentCollection);
+  const collection = useSelector((s: AppState) => getByKey(s.collections, s.currentCollection));
+  const buildStatus = collection?.buildStatus;
+  const buildError = collection?.buildError;
+  const filepaths = collection?.protoFilepaths;
+  
   function onSelectResponseMsg(msgName: string): void {
     dispatch(selectResponseMessageName(msgName));
   }
 
   function onSelectResponseMsgOnError(msgName: string): void {
     dispatch(selectResponseMessageOnErrorName(msgName));
+  }
+
+  function handleRebuildProtobufModels(): void {
+    if (filepaths != null) {
+      dispatch(buildProtofiles(collectionName, filepaths as string[], collection?.protoRootPath));
+    }
   }
 
   return (
@@ -68,6 +84,21 @@ const ExpectedBodyInput: React.FunctionComponent<Props> = ({
           </Select.Option>
         ))}
       </Select>
+
+      <div style={{ height: 8 }} />
+
+      <Button
+        shape="circle"
+        size="small"
+        onClick={handleRebuildProtobufModels}
+        title="Rebuild & Refresh Protobuf models"
+      >
+        <ReloadOutlined />
+      </Button>
+
+      {buildStatus === 'failure' ? (
+        <Alert message={buildError?.toString() || ' '} type="error" closeText="Close" />
+      ) : null}
     </div>
   );
 };
