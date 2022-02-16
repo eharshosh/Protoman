@@ -1,5 +1,5 @@
 import React from 'react';
-import { List, Typography, Button, message, Popover } from 'antd';
+import { List, Typography, Button, message, Popover, Collapse, Col } from 'antd';
 import { DeleteOutlined, SubnodeOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 import { prevent, getByKey } from '../../utils/utils';
@@ -27,7 +27,23 @@ const FlowList: React.FunctionComponent<Props> = ({ collectionName }) => {
   const dispatch = useDispatch();
 
   const collection = useSelector((s: AppState) => getByKey(s.collections, collectionName));
-  const flowNames = useSelector((s: AppState) => collection?.flows?.map(([n]) => n));
+  const allFlowNames = useSelector((s: AppState) => collection?.flows?.map(([n]) => n));
+  type flowItemMetadata = { index: Number; displayName: string; flowName: string };
+  const flowGroups = (allFlowNames || []).reduce(
+    (acc: { root: flowItemMetadata[]; groups: { [key: string]: flowItemMetadata[] } }, flowName, index) => {
+      const pathSepIndex = flowName.indexOf('/');
+      if (pathSepIndex === -1) {
+        acc['root'].push({ index, displayName: flowName, flowName });
+        return acc;
+      }
+      const groupName = flowName.substring(0, pathSepIndex);
+      const displayName = flowName.substring(pathSepIndex + 1);
+      acc['groups'][groupName] = acc['groups'][groupName] || [];
+      acc['groups'][groupName].push({ index, displayName, flowName });
+      return acc;
+    },
+    { root: [], groups: {} },
+  );
   const isCurrentCollection = useSelector((s: AppState) => s.currentCollection === collectionName);
   const currentFlow = useSelector((s: AppState) => s.currentFlow);
 
@@ -71,20 +87,45 @@ const FlowList: React.FunctionComponent<Props> = ({ collectionName }) => {
       <Droppable droppableId={collectionName}>
         {(provided): React.ReactElement => (
           <div {...provided.droppableProps} ref={provided.innerRef}>
-            <List
-              dataSource={flowNames}
-              rowKey={(name): string => name}
-              renderItem={(flowName, idx): React.ReactNode => (
-                <FlowCell
-                  idx={idx}
-                  flowName={flowName}
-                  emphasize={isCurrentCollection && currentFlow === flowName}
-                  handleSelection={handleSelection}
-                  handleDelete={handleDelete}
-                  handleClone={handleClone}
+            <Collapse>
+              <Collapse.Panel header="Not Categorized" key="root">
+                <List
+                  dataSource={flowGroups.root}
+                  rowKey={item => item.flowName}
+                  renderItem={(item, idx): React.ReactNode => (
+                    <FlowCell
+                      idx={idx}
+                      displayName={item.displayName}
+                      flowName={item.flowName}
+                      emphasize={isCurrentCollection && currentFlow === item.flowName}
+                      handleSelection={handleSelection}
+                      handleDelete={handleDelete}
+                      handleClone={handleClone}
+                    />
+                  )}
                 />
-              )}
-            />
+              </Collapse.Panel>
+
+              {Object.keys(flowGroups.groups).map(groupName => (
+                <Collapse.Panel key={groupName} header={groupName}>
+                  <List
+                    dataSource={flowGroups.groups[groupName]}
+                    rowKey={item => item.flowName}
+                    renderItem={(item, idx): React.ReactNode => (
+                      <FlowCell
+                        idx={idx}
+                        displayName={item.displayName}
+                        flowName={item.flowName}
+                        emphasize={isCurrentCollection && currentFlow === item.flowName}
+                        handleSelection={handleSelection}
+                        handleDelete={handleDelete}
+                        handleClone={handleClone}
+                      />
+                    )}
+                  />
+                </Collapse.Panel>
+              ))}
+            </Collapse>
             {provided.placeholder}
           </div>
         )}
@@ -94,6 +135,7 @@ const FlowList: React.FunctionComponent<Props> = ({ collectionName }) => {
 };
 
 type CellProps = {
+  displayName: string;
   flowName: string;
   emphasize: boolean;
   idx: number;
@@ -102,7 +144,15 @@ type CellProps = {
   handleClone: (name: string) => void;
 };
 
-const FlowCell: React.FC<CellProps> = ({ flowName, emphasize, handleSelection, handleDelete, handleClone, idx }) => {
+const FlowCell: React.FC<CellProps> = ({
+  displayName,
+  flowName,
+  emphasize,
+  handleSelection,
+  handleDelete,
+  handleClone,
+  idx,
+}) => {
   const [menuVisible, setMenuVisible] = React.useState(false);
   function showMenu(): void {
     setMenuVisible(true);
@@ -167,7 +217,7 @@ const FlowCell: React.FC<CellProps> = ({ flowName, emphasize, handleSelection, h
                   strong={emphasize}
                   style={{ userSelect: 'none', color: emphasize ? 'rgb(47, 93, 232)' : undefined }}
                 >
-                  {flowName}
+                  {displayName}
                 </Typography.Text>
               </div>
             );
