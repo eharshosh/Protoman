@@ -88,7 +88,7 @@ const FlowList: React.FunctionComponent<Props> = ({ collectionName }) => {
         {(provided): React.ReactElement => (
           <div {...provided.droppableProps} ref={provided.innerRef}>
             <Collapse>
-              <Collapse.Panel header="Not Categorized" key="root">
+              <Collapse.Panel header="Not Categorized" key="root" showArrow={false}>
                 <List
                   dataSource={flowGroups.root}
                   rowKey={item => item.flowName}
@@ -107,7 +107,7 @@ const FlowList: React.FunctionComponent<Props> = ({ collectionName }) => {
               </Collapse.Panel>
 
               {Object.keys(flowGroups.groups).map(groupName => (
-                <Collapse.Panel key={groupName} header={groupName}>
+                <Collapse.Panel key={groupName} header={groupName} showArrow={false}>
                   <List
                     dataSource={flowGroups.groups[groupName]}
                     rowKey={item => item.flowName}
