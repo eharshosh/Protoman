@@ -39,7 +39,9 @@ export async function deserializeProtobuf(
     const obj = decoded.toJSON();
 
     try {
-      return { tag: 'valid', value: handleMessage(createMessageType(messageType), obj, ctx) };
+      const msgType = createMessageType(messageType);
+      const value = handleMessage(msgType, obj, ctx);
+      return { tag: 'valid', value };
     } catch (e) {
       return { tag: 'invalid', value: JSON.stringify(obj, null, 2), error: e.toString() };
     }
@@ -63,21 +65,19 @@ export function createMessageValue(messageProto: ProtobufType, messageJson: Prot
     case 'enum':
       const enumType = messageProto as EnumType;
       const e = messageJson ?? 0;
-      assertType(e, ['number']);
-      return handleEnum(enumType, e as number);
+      return handleEnum(enumType, e as string | number);
   }
 }
 
-function handleEnum(messageType: EnumType, jsonValue: number): EnumValue {
-  const selected = Object.entries(messageType.optionValues).find(([, value]) => value === jsonValue)?.[0];
-  if (!selected) {
+function handleEnum(messageType: EnumType, jsonValue: number | string): EnumValue {
+  const useValue = typeof jsonValue === 'number';
+  const selected = Object.entries(messageType.optionValues).find(
+    ([key, value]) => (useValue ? value : key) === jsonValue,
+  )?.[0];
+  if (selected === undefined) {
     throw deserializeError(`The given enum value ${jsonValue} isn't defined in '${messageType.name}'`);
-  } else {
-    return {
-      type: messageType,
-      selected,
-    };
   }
+  return { type: messageType, selected };
 }
 
 function handlePrimitive(messageType: PrimitiveType, messageJson: string | number | boolean): PrimitiveValue {
