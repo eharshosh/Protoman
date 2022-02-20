@@ -37,6 +37,7 @@ export function createDefaultProtoCtx(): Draft<ProtoCtx> {
   return {
     types: {},
     descriptorJson: '{}',
+    customTypeConverters: {}
   };
 }
 

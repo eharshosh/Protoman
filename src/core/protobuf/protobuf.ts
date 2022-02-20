@@ -9,9 +9,14 @@ export type Fields<T> = ReadonlyArray<Field<T>>;
 export type Entry<T> = [string, T];
 export type Entries<T> = ReadonlyArray<Entry<T>>;
 
+export interface CustomTypeConverters {
+  parsing?: { [key: string]: string };
+}
+
 export interface ProtoCtx {
   readonly types: { [key: string]: ProtobufType };
   readonly descriptorJson: string;
+  customTypeConverters?: CustomTypeConverters;
 }
 
 export function typeNameToType(name: TypeName, ctx: ProtoCtx): ProtobufType {

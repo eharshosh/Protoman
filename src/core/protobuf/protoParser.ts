@@ -2,6 +2,8 @@ import protobuf from 'protobufjs';
 import { ProtobufType, MessageType, EnumType, ProtoCtx } from './protobuf';
 import { allPrimitiveTypes } from './primitiveTypes';
 import path from 'path';
+import fs from 'fs';
+import util from 'util';
 
 type FieldPair<T> = [string, T];
 type Fields<T> = Array<FieldPair<T>>;
@@ -100,14 +102,24 @@ export async function buildContext(filepaths: string[], rootPath?: string): Prom
   baseRoot.resolvePath = (origin, target): string => path.resolve(rootPath ?? origin, target);
 
   const [types, root] = await readProto(baseRoot, filepaths);
-
   const descriptorJson = JSON.stringify(root.toJSON());
-
-  return {
+  const res: ProtoCtx = {
     types: types.concat(allPrimitiveTypes).reduce<ProtoCtx['types']>((acc, t) => {
       acc[t.name] = t;
       return acc;
     }, {}),
-    descriptorJson,
+    descriptorJson
   };
+  if (rootPath) {
+    const customTypeConvertersPath = path.join(rootPath, 'protoman_custom_converters.json');
+    const exists = util.promisify(fs.exists);
+    const readFile = util.promisify(fs.readFile);
+    if (await exists(customTypeConvertersPath)) {
+      const fileData = await readFile(customTypeConvertersPath);
+      const textDecoder = new TextDecoder();
+      const json = JSON.parse(textDecoder.decode(fileData));
+      res.customTypeConverters = json;
+    }
+  }
+  return res;
 }

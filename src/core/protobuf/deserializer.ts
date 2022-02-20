@@ -51,6 +51,23 @@ export async function deserializeProtobuf(
 }
 
 export function createMessageValue(messageProto: ProtobufType, messageJson: ProtoJson, ctx: ProtoCtx): ProtobufValue {
+  let value = createMessageValueImpl(messageProto, messageJson, ctx);
+  if (ctx.customTypeConverters?.parsing) {
+    for (const [fieldName, functionBody] of Object.entries(ctx.customTypeConverters?.parsing)) {
+      if (value.type.name === fieldName) {
+        const convertFunction = new Function('value', functionBody);
+        return convertFunction(value);
+      }
+    }
+  }
+  return value;
+}
+
+export function createMessageValueImpl(
+  messageProto: ProtobufType,
+  messageJson: ProtoJson,
+  ctx: ProtoCtx,
+): ProtobufValue {
   switch (messageProto.tag) {
     case 'message':
       const messageType = messageProto as MessageType;
