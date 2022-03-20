@@ -1,6 +1,6 @@
 {
   "name": "Protoman",
-  "version": "0.4.1",
+  "version": "0.4.2-alpha",
   "description": "Basic Postman clone with protobuf functionalities",
   "author": "Inchan Hwang, Louis Lee",
   "license": "MIT",
@@ -21,7 +21,8 @@
     "dist:all": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder -mwl",
     "dist:mac": "electron-builder --mac",
     "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux"
+    "dist:linux": "electron-builder --linux",
+    "release": "npm run build-main && npm run build-renderer && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder -mwl"
   },
   "build": {
     "appId": "co.protoman.protoman",
