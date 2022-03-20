@@ -77,6 +77,6 @@ module.exports = {
       template: './templates/index.html',
     }),
     new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /ja|it/),
-    ...(NODE_ENV === 'production' ? [new BundleAnalyzerPlugin()] : []),
+    // ...(NODE_ENV === 'production' ? [new BundleAnalyzerPlugin()] : []),
   ],
 };
